@@ -65,7 +65,7 @@ public:
 
     RCLCPP_INFO(
       get_logger(),
-      "Offboard node ready. waypoint1=(0.00, 0.00, -1.00), waypoint2=(0.00, 1.50, -1.00), waypoint3=(1.50, 1.50, -1.00)");
+      "Offboard node ready. waypoint1=(0.00, 0.00, -1.00), waypoint2=(0.00, 1.50, -1.00), waypoint3=(1.50, 1.50, -1.00), orbit_center=(2.00, 1.50), orbit_radius=0.50, orbit_z=-0.50");
   }
 
 private:
@@ -75,6 +75,8 @@ private:
     FlyToFirstPoint,
     FlyToSecondPoint,
     FlyToThirdPoint,
+    DescendToOrbitStart,
+    OrbitPoleClockwise,
     Done,
   };
 
@@ -117,6 +119,24 @@ private:
 
     if (state_ == State::FlyToThirdPoint && reached_target(third_point_)) {
       RCLCPP_INFO(get_logger(), "Reached third target: (1.50, 1.50, -1.00)");
+      enter_state(State::DescendToOrbitStart);
+      return;
+    }
+
+    if (state_ == State::DescendToOrbitStart && reached_target(orbit_start_point_)) {
+      RCLCPP_INFO(get_logger(), "Reached orbit start: (1.50, 1.50, -0.50)");
+      enter_state(State::OrbitPoleClockwise);
+      return;
+    }
+
+    if (state_ == State::OrbitPoleClockwise && elapsed_in_state() >= orbit_duration_) {
+      RCLCPP_INFO(
+        get_logger(),
+        "Completed clockwise orbit around pole center=(%.2f, %.2f), radius=%.2f, z=%.2f",
+        orbit_center_x_,
+        orbit_center_y_,
+        orbit_radius_,
+        orbit_z_);
       enter_state(State::Done);
       return;
     }
@@ -155,6 +175,17 @@ private:
       target[0],
       target[1],
       target[2]);
+
+    if (state_ == State::OrbitPoleClockwise) {
+      RCLCPP_INFO(
+        get_logger(),
+        "Orbit clockwise: center=(%.2f, %.2f), radius=%.2f, z=%.2f, duration=%.1fs",
+        orbit_center_x_,
+        orbit_center_y_,
+        orbit_radius_,
+        orbit_z_,
+        orbit_duration_);
+    }
   }
 
   const char * state_name(State state) const
@@ -171,6 +202,12 @@ private:
 
       case State::FlyToThirdPoint:
         return "FlyToThirdPoint";
+
+      case State::DescendToOrbitStart:
+        return "DescendToOrbitStart";
+
+      case State::OrbitPoleClockwise:
+        return "OrbitPoleClockwise";
 
       case State::Done:
         return "Done";
@@ -190,11 +227,40 @@ private:
         return second_point_;
 
       case State::FlyToThirdPoint:
-      case State::Done:
         return third_point_;
+
+      case State::DescendToOrbitStart:
+      case State::Done:
+        return orbit_start_point_;
+
+      case State::OrbitPoleClockwise:
+        return orbit_target();
     }
 
     return first_point_;
+  }
+
+  std::array<float, 3> orbit_target() const
+  {
+    constexpr double kPi = 3.14159265358979323846;
+
+    auto progress = elapsed_in_state() / orbit_duration_;
+    if (progress < 0.0) {
+      progress = 0.0;
+    } else if (progress > 1.0) {
+      progress = 1.0;
+    }
+
+    const auto angle = kPi + 2.0 * kPi * progress;
+    return {
+      static_cast<float>(orbit_center_x_ + orbit_radius_ * std::cos(angle)),
+      static_cast<float>(orbit_center_y_ + orbit_radius_ * std::sin(angle)),
+      orbit_z_};
+  }
+
+  double elapsed_in_state() const
+  {
+    return (now() - state_enter_time_).seconds();
   }
 
   void arm()
@@ -300,6 +366,13 @@ private:
   const std::array<float, 3> first_point_{0.0F, 0.0F, -1.0F};
   const std::array<float, 3> second_point_{0.0F, 1.5F, -1.0F};
   const std::array<float, 3> third_point_{1.5F, 1.5F, -1.0F};
+  const std::array<float, 3> orbit_start_point_{1.5F, 1.5F, -0.5F};
+
+  const float orbit_center_x_{2.0F};
+  const float orbit_center_y_{1.5F};
+  const float orbit_radius_{0.5F};
+  const float orbit_z_{-0.5F};
+  const double orbit_duration_{12.0};
 
   std::array<float, 3> current_position_{0.0F, 0.0F, 0.0F};
 };
