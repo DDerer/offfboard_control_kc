@@ -99,9 +99,8 @@ Available launch arguments:
 | --- | --- | --- |
 | `auto_start` | `false` | Send PX4 command to enter Offboard mode after warmup. |
 | `auto_arm` | `false` | Send PX4 arm command after warmup. |
-| `warmup_setpoints` | `10` | Number of initial setpoints published before state transition. |
-| `position_tolerance` | `0.1` | Position tolerance in meters for waypoint arrival. |
-| `local_position_topic` | `/fmu/out/vehicle_local_position_v1` | Vehicle local position topic. |
+
+Other node parameters use the defaults declared in `offboard_node.cpp`.
 
 ### `simple_takeoff_node`
 
