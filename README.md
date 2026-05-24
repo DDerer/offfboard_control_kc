@@ -4,7 +4,7 @@ ROS 2 C++ package for PX4 Offboard position control through `px4_msgs`.
 
 This package provides two example nodes:
 
-- `offboard_node`: flies through three fixed local-position waypoints.
+- `offboard_node`: flies through three fixed local-position waypoints, descends, and orbits a pole once.
 - `simple_takeoff_node`: performs a simple takeoff, hover, and lateral move sequence.
 
 The coordinate convention follows PX4 local NED:
@@ -48,14 +48,27 @@ source install/setup.bash
 
 ### `offboard_node`
 
-Runs a three-waypoint state machine:
+Runs a waypoint and pole-orbit state machine:
 
 ```text
 Warmup
-  -> FlyToFirstPoint:  (0.0, 0.0, -1.0)
-  -> FlyToSecondPoint: (0.0, 1.5, -1.0)
-  -> FlyToThirdPoint:  (1.5, 1.5, -1.0)
+  -> FlyToFirstPoint:     (0.0, 0.0, -1.0)
+  -> FlyToSecondPoint:    (0.0, 1.5, -1.0)
+  -> FlyToThirdPoint:     (1.5, 1.5, -1.0)
+  -> DescendToOrbitStart: (1.5, 1.5, -0.5)
+  -> OrbitPoleClockwise:  center=(2.0, 1.5), radius=0.5, z=-0.5
   -> Done
+```
+
+The clockwise pole orbit is centered at `(2.0, 1.5, 0.0)` and keeps a 0.5 m radius at `z=-0.5`.
+It follows this path:
+
+```text
+(1.5, 1.5, -0.5)
+  -> (2.0, 1.0, -0.5)
+  -> (2.5, 1.5, -0.5)
+  -> (2.0, 2.0, -0.5)
+  -> (1.5, 1.5, -0.5)
 ```
 
 The node publishes:
