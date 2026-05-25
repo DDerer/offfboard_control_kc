@@ -53,6 +53,7 @@ Runs a waypoint and pole-orbit state machine:
 ```text
 Warmup
   -> FlyToFirstPoint:     (0.0, 0.0, -1.0)
+  -> HoverAtFirstPoint:   hold 5.0s at (0.0, 0.0, -1.0)
   -> FlyToSecondPoint:    (0.0, 1.5, -1.0)
   -> FlyToThirdPoint:     (1.5, 1.5, -1.0)
   -> DescendToOrbitStart: (1.5, 1.5, -0.5)
