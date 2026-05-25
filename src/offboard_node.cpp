@@ -73,6 +73,7 @@ private:
   {
     Warmup,
     FlyToFirstPoint,
+    HoverAtFirstPoint,
     FlyToSecondPoint,
     FlyToThirdPoint,
     DescendToOrbitStart,
@@ -107,6 +108,12 @@ private:
 
     if (state_ == State::FlyToFirstPoint && reached_target(first_point_)) {
       RCLCPP_INFO(get_logger(), "Reached first target: (0.00, 0.00, -1.00)");
+      enter_state(State::HoverAtFirstPoint);
+      return;
+    }
+
+    if (state_ == State::HoverAtFirstPoint && elapsed_in_state() >= first_hover_duration_) {
+      RCLCPP_INFO(get_logger(), "First point hover finished: %.1fs", first_hover_duration_);
       enter_state(State::FlyToSecondPoint);
       return;
     }
@@ -197,6 +204,9 @@ private:
       case State::FlyToFirstPoint:
         return "FlyToFirstPoint";
 
+      case State::HoverAtFirstPoint:
+        return "HoverAtFirstPoint";
+
       case State::FlyToSecondPoint:
         return "FlyToSecondPoint";
 
@@ -221,6 +231,7 @@ private:
     switch (state_) {
       case State::Warmup:
       case State::FlyToFirstPoint:
+      case State::HoverAtFirstPoint:
         return first_point_;
 
       case State::FlyToSecondPoint:
@@ -367,6 +378,8 @@ private:
   const std::array<float, 3> second_point_{0.0F, 1.5F, -1.0F};
   const std::array<float, 3> third_point_{1.5F, 1.5F, -1.0F};
   const std::array<float, 3> orbit_start_point_{1.5F, 1.5F, -0.5F};
+
+  const double first_hover_duration_{5.0};
 
   const float orbit_center_x_{2.0F};
   const float orbit_center_y_{1.5F};
